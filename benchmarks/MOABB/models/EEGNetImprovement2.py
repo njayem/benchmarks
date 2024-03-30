@@ -122,7 +122,7 @@ class EEGNetImprovement2(torch.nn.Module):
                 in_channels=cnn_temporal_kernels,
                 out_channels=cnn_temporal_kernels,
                 kernel_size=cnn_temporal_kernelsize,
-                padding=16,
+                padding="same",
                 padding_mode="constant",
                 bias=False,
                 swap=True,
@@ -134,8 +134,7 @@ class EEGNetImprovement2(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
-
-
+   
         # Spatial depthwise convolution (FIRST)
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
