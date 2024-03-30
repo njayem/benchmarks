@@ -69,6 +69,7 @@ loss: !name:speechbrain.nnet.losses.nll_loss
     label_smoothing: !ref <label_smoothing>
 optimizer: !name:torch.optim.Adam
     lr: !ref <lr>
+    weight_decay: 1e-5
 epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter  # epoch counter
     limit: !ref <number_of_epochs>
 batch_size_exponent: 4 # @orion_step1: --batch_size_exponent~"uniform(4, 6,discrete=True)"
@@ -147,7 +148,7 @@ cnn_septemporal_pool: 7 # @orion_step1: --cnn_septemporal_pool~"uniform(1, 8,dis
 cnn_pool_type: 'avg'
 dense_max_norm: 0.25  # kernel max-norm constaint of the dense layer
 dropout: 0.008464 # @orion_step1: --dropout~"uniform(0.0, 0.5)"
-activation_type: 'selu'
+activation_type: 'elu'
 
 model: !new:models.EEGNetImprovement2.EEGNetImprovement2
     input_shape: !ref <input_shape>
