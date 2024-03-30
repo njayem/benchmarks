@@ -234,7 +234,7 @@ class EEGNetImprovement3(torch.nn.Module):
             num_features *= s
         return num_features
 
-    def generate_positional_embeddings(self, length, d_model,device):
+    def generate_positional_embeddings(self, length, d_model, device):
         """
         Generate sinusoidal positional embeddings.
 
