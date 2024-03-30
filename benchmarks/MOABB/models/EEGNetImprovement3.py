@@ -263,7 +263,7 @@ class EEGNetImprovement3(torch.nn.Module):
         # Generate and add positional embeddings
         temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
         d_model = x.shape[3]
-        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model)
+        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, device)
         
         # Adjust pos_embeddings shape for broadcasting
         pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
