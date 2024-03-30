@@ -83,7 +83,7 @@ class EEGNet(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-       elif activation_type == "selu":
+        elif activation_type == "selu":
             activation = torch.nn.SELU()
         else:
             raise ValueError("Wrong hidden activation function")
