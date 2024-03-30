@@ -9,7 +9,7 @@ import torch
 import speechbrain as sb
 
 
-class EEGNet(torch.nn.Module):
+class EEGNetImprovement(torch.nn.Module):
     """EEGNet.
 
     Arguments
