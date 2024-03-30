@@ -60,20 +60,17 @@ class MOABBBrain(sb.Brain):
         "Given the network predictions and targets computes the loss."
         targets = batch[1].to(self.device)
 
-        # Ensure class weights are correctly handled, similar to your existing setup
-        if hasattr(self.hparams, 'class_weights'):
-            weight = torch.FloatTensor(self.hparams.class_weights).to(self.device)
-        else:
-            weight = None
+        # Target augmentation
+        N_augments = int(predictions.shape[0] / targets.shape[0])
+        targets = torch.cat(N_augments * [targets], dim=0)
 
-        # Extracting focal loss parameters from hparams
-        alpha = self.hparams['focal_loss_params']['alpha']
-        gamma = self.hparams['focal_loss_params']['gamma']
-        reduction = self.hparams['focal_loss_params']['reduction']
-
-        # Call your focal loss function here with the extracted parameters
-        loss = self.hparams.loss(predictions, targets, alpha=alpha, gamma=gamma, reduction=reduction, weight=weight)
-
+        loss = self.hparams.loss(
+            predictions,
+            targets,
+            weight=torch.FloatTensor(self.hparams.class_weights).to(
+                self.device
+            ),
+        )
         if stage != sb.Stage.TRAIN:
             # From log to linear predictions
             tmp_preds = torch.exp(predictions)
