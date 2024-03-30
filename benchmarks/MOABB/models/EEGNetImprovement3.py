@@ -9,8 +9,8 @@ import torch
 import speechbrain as sb
 
 
-class EEGNet(torch.nn.Module):
-    """EEGNet.
+class EEGNetImprovement3(torch.nn.Module):
+    """EEGNetImprovement3.
 
     Arguments
     ---------
@@ -234,14 +234,46 @@ class EEGNet(torch.nn.Module):
             num_features *= s
         return num_features
 
-    def forward(self, x):
-        """Returns the output of the model.
-
-        Arguments
-        ---------
-        x : torch.Tensor (batch, time, EEG channel, channel)
-            Input to convolve. 4d tensors are expected.
+    def generate_positional_embeddings(self, length, d_model):
         """
-        x = self.conv_module(x)
+        Generate sinusoidal positional embeddings.
+
+        Parameters:
+        length (int): The temporal length of the sequence.
+        d_model (int): The dimensionality of the embeddings.
+
+        Returns:
+        torch.Tensor: The positional embeddings with shape (length, d_model).
+        """
+        position = torch.arange(length).unsqueeze(1).float().to(x.device)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(x.device)
+        positional_embedding = torch.zeros((length, d_model)).to(x.device)
+        positional_embedding[:, 0::2] = torch.sin(position * div_term)
+        positional_embedding[:, 1::2] = torch.cos(position * div_term)
+        
+        return positional_embedding
+
+    def forward(self, x):
+        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
+
+        # Temporal convolution
+        x = self.conv_module[0](x)  # Apply the first convolution layer
+        x = self.conv_module[1](x)  # Apply batch norm
+
+        # Generate and add positional embeddings
+        temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
+        d_model = x.shape[3]
+        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model)
+        
+        # Adjust pos_embeddings shape for broadcasting
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
+        
+        # Add positional embeddings to the convolution output
+        x += pos_embeddings
+        
+        # Proceed with the original EEGNet layers
+        for layer in self.conv_module[2:]:
+            x = layer(x)
+
         x = self.dense_module(x)
         return x
