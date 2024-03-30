@@ -7,6 +7,7 @@ Authors
 """
 import torch
 import speechbrain as sb
+import numpy as np
 
 
 class EEGNetImprovement3(torch.nn.Module):
