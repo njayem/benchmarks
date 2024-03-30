@@ -65,7 +65,13 @@ lr_annealing: !new:speechbrain.nnet.schedulers.CyclicLRScheduler
     max_lr: !ref <max_lr>
     step_size: !ref <step_size>
 label_smoothing: 0.0
-loss: !name:speechbrain.nnet.losses.nll_loss
+focal_loss_alpha: 0.25
+focal_loss_gamma: 2.0
+focal_loss_reduction: 'mean'
+loss: !name:speechbrain.nnet.losses.FocalLoss
+    alpha: !ref <focal_loss_alpha>
+    gamma: !ref <focal_loss_gamma>
+    reduction: !ref <focal_loss_reduction>
     label_smoothing: !ref <label_smoothing>
 optimizer: !name:torch.optim.Adam
     lr: !ref <lr>
