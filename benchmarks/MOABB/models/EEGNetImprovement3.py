@@ -241,17 +241,19 @@ class EEGNetImprovement3(torch.nn.Module):
         Parameters:
         length (int): The temporal length of the sequence.
         d_model (int): The dimensionality of the embeddings.
+        device (torch.device): The device to generate the embeddings on.
 
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
-        position = torch.arange(length).unsqueeze(1).float().to(x.device)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(x.device)
-        positional_embedding = torch.zeros((length, d_model)).to(x.device)
+        position = torch.arange(length).unsqueeze(1).float().to(device)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+        positional_embedding = torch.zeros((length, d_model)).to(device)
         positional_embedding[:, 0::2] = torch.sin(position * div_term)
         positional_embedding[:, 1::2] = torch.cos(position * div_term)
         
         return positional_embedding
+
 
     def forward(self, x):
         """Returns the output of the model with positional embeddings added after the first temporal convolution."""
