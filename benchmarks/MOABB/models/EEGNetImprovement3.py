@@ -253,12 +253,15 @@ class EEGNetImprovement3(torch.nn.Module):
 
         positional_embedding = torch.zeros((length, d_model), device=device)
         positional_embedding[:, 0::2] = torch.sin(position * div_term)
-        
+
         # Ensure that we do not exceed d_model when assigning cosine values
-        cos_indices = torch.arange(1, d_model, 2)
-        if d_model % 2 == 1:  # If d_model is odd, adjust the last index
-            cos_indices = cos_indices[:positional_embedding[:, 1::2].shape[1]]
-        positional_embedding[:, cos_indices] = torch.cos(position * div_term)
+        cos_indices = torch.arange(1, d_model, 2).to(device)
+        if d_model % 2 == 1:  # If d_model is odd, adjust the div_term calculation for cosine values
+            # Recalculate div_term for cosine to properly align with the number of cosine indices
+            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
+        else:
+            positional_embedding[:, 1::2] = torch.cos(position * div_term)
 
         return positional_embedding
 
