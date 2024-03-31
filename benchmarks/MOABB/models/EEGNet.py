@@ -109,7 +109,7 @@ class EEGNet(torch.nn.Module):
         self.conv_module.add_module(
             "bnorm_0",
             sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_temporal_kernels, momentum=0.001, affine=True,
+                input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
         # Spatial depthwise convolution
@@ -132,7 +132,7 @@ class EEGNet(torch.nn.Module):
         self.conv_module.add_module(
             "bnorm_1",
             sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_spatial_kernels, momentum=0.001, affine=True,
+                input_size=cnn_spatial_kernels, momentum=0.01, affine=True,
             ),
         )
         self.conv_module.add_module("act_1", activation)
@@ -183,7 +183,7 @@ class EEGNet(torch.nn.Module):
             "bnorm_3",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_septemporal_point_kernels,
-                momentum=0.001,
+                momentum=0.01,
                 affine=True,
             ),
         )
