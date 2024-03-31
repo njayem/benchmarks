@@ -69,6 +69,7 @@ loss: !name:speechbrain.nnet.losses.nll_loss
     label_smoothing: !ref <label_smoothing>
 optimizer: !name:torch.optim.Adam
     lr: !ref <lr>
+    weight_decay: 1e-5s
 epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter  # epoch counter
     limit: !ref <number_of_epochs>
 batch_size_exponent: 4 # @orion_step1: --batch_size_exponent~"uniform(4, 6,discrete=True)"
