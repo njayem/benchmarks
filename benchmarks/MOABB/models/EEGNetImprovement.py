@@ -122,32 +122,6 @@ class EEGNetImprovement(torch.nn.Module):
 
         # Temporal Activation Function
         self.conv_module.add_module("act_0", activation)
-        
-        
-        # Temporal Convolution (SECOND)
-        self.conv_module.add_module(
-            "conv_1",
-            sb.nnet.CNN.Conv2d(
-                in_channels=cnn_temporal_kernels,
-                out_channels=cnn_temporal_kernels,
-                kernel_size=cnn_temporal_kernelsize,
-                padding="same",
-                padding_mode="constant",
-                bias=False,
-                swap=True,
-            ),
-        )
-
-        # Temporal Batch Norm
-        self.conv_module.add_module(
-            "bnorm_1",
-            sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
-            ),
-        )
-
-        # Temporal Activation Function
-        self.conv_module.add_module("act_1", activation)
 
 
         # SPATIAL DEPTHWISE CONVOLUTION (FIRST)
@@ -156,7 +130,7 @@ class EEGNetImprovement(torch.nn.Module):
         )
 
         self.conv_module.add_module(
-            "conv_2",
+            "conv_1",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_temporal_kernels,
                 out_channels=cnn_spatial_kernels,
@@ -171,19 +145,19 @@ class EEGNetImprovement(torch.nn.Module):
 
         # Spatial Batch Normalization
         self.conv_module.add_module(
-            "bnorm_2",
+            "bnorm_1",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_spatial_kernels, momentum=0.01, affine=True,
             ),
         )
 
         # Spatial Activation Function
-        self.conv_module.add_module("act_2", activation)
+        self.conv_module.add_module("act_1", activation)
 
 
         # POOLING LAYER
         self.conv_module.add_module(
-            "pool_2",
+            "pool_1",
             sb.nnet.pooling.Pooling2d(
                 pool_type=cnn_pool_type,
                 kernel_size=cnn_spatial_pool,
@@ -193,13 +167,13 @@ class EEGNetImprovement(torch.nn.Module):
         )
 
        
-       # SEPARABLE (DEPTHWISE) CONVOLUTION
+        # SEPARABLE (DEPTHWISE) CONVOLUTION
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
         )
     
         self.conv_module.add_module(
-            "conv_3",
+            "conv_2",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_spatial_kernels,
                 out_channels=cnn_septemporal_kernels,
@@ -222,7 +196,7 @@ class EEGNetImprovement(torch.nn.Module):
             cnn_septemporal_point_kernels = cnn_septemporal_kernels
 
         self.conv_module.add_module(
-            "conv_4",
+            "conv_3",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_kernels,
                 out_channels=cnn_septemporal_point_kernels,
@@ -235,7 +209,7 @@ class EEGNetImprovement(torch.nn.Module):
 
         # Separable Batch Normalization
         self.conv_module.add_module(
-            "bnorm_4",
+            "bnorm_3",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_septemporal_point_kernels,
                 momentum=0.01,
@@ -244,12 +218,12 @@ class EEGNetImprovement(torch.nn.Module):
         )
 
         # Separable Activation Function
-        self.conv_module.add_module("act_4", activation)
+        self.conv_module.add_module("act_3", activation)
 
 
         # POOLING LAYER
         self.conv_module.add_module(
-            "pool_4",
+            "pool_3",
             sb.nnet.pooling.Pooling2d(
                 pool_type=cnn_pool_type,
                 kernel_size=cnn_septemporal_pool,
