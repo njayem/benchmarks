@@ -85,6 +85,10 @@ class EEGNetImprovement(torch.nn.Module):
             activation = torch.nn.PReLU()
         elif activation_type == "selu":
             activation = torch.nn.SELU()
+        elif activation_type == "mish":
+            activation = torch.nn.Mish()
+        elif activation_type == "swish":
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
         self.default_sf = 128  # sampling rate of the original publication (Hz)
