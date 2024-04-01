@@ -128,7 +128,7 @@ class EEGNetImprovement(torch.nn.Module):
         self.conv_module.add_module(
             "conv_1",
             sb.nnet.CNN.Conv2d(
-                in_channels=1,
+                in_channels=cnn_temporal_kernels,
                 out_channels=cnn_temporal_kernels,
                 kernel_size=cnn_temporal_kernelsize,
                 padding="same",
