@@ -98,7 +98,7 @@ class EEGNetImprovement(torch.nn.Module):
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
 
-        # Temporal convolution (FIRST)
+        # Temporal Convolution (FIRST)
         self.conv_module.add_module(
             "conv_0",
             sb.nnet.CNN.Conv2d(
@@ -120,11 +120,11 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
-        # Temporal ELU Activation Function
+        # Temporal Activation Function
         self.conv_module.add_module("act_0", activation)
 
 
-        # Spatial depthwise convolution (FIRST)
+        # SPATIAL DEPTHWISE CONVOLUTION (FIRST)
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
         )
@@ -151,7 +151,7 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
-        # Spatial ELU ACTIVATION LAYER
+        # Spatial Activation Function
         self.conv_module.add_module("act_1", activation)
 
 
@@ -167,12 +167,11 @@ class EEGNetImprovement(torch.nn.Module):
         )
 
        
-        # Temporal separable convolution
+        # SEPARABLE (DEPTHWISE) CONVOLUTION
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
         )
-
-        # DEPTHWISE CONVOLUTION
+    
         self.conv_module.add_module(
             "conv_2",
             sb.nnet.CNN.Conv2d(
@@ -187,10 +186,15 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
+
+        # SEPARABLE CONVOLUTION DROP-OUT
+        self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
+
+
+        # SEPARABLE (POINTWISE) CONVOLUTION
         if cnn_septemporal_point_kernels is None:
             cnn_septemporal_point_kernels = cnn_septemporal_kernels
 
-        # POINTHWISE CONVOLUTION
         self.conv_module.add_module(
             "conv_3",
             sb.nnet.CNN.Conv2d(
@@ -213,7 +217,7 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
-        # ELU ACTIVATION LAYER
+        # Separable Activation Function
         self.conv_module.add_module("act_3", activation)
 
 
@@ -228,22 +232,13 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
-
-        # DROP-OUT
-        self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
-
-
-        # Shape of intermediate feature maps
+        # FLATTEN + DENSE LAYER
         out = self.conv_module(
             torch.ones((1,) + tuple(input_shape[1:-1]) + (1,))
         )
 
-
-        # FLATTEN LAYER
         dense_input_size = self._num_flat_features(out)
 
-
-        # DENSE LAYER
         self.dense_module = torch.nn.Sequential()
         self.dense_module.add_module(
             "flatten", torch.nn.Flatten(),
@@ -257,7 +252,7 @@ class EEGNetImprovement(torch.nn.Module):
             ),
         )
 
-        # SIGMOID FN
+        # Final SOFTMAX Activation Function
         self.dense_module.add_module("act_out", torch.nn.LogSoftmax(dim=1))
 
     def _num_flat_features(self, x):
