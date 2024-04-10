@@ -291,7 +291,7 @@ class EEGNetImprovement3(torch.nn.Module):
 
         # Step 4: Proceed with the rest of the layers in the conv_module
         for layer in self.conv_module[2:]:
-        x = layer(x)
+            x = layer(x)
 
         # Process the output through the dense_module
         x = self.dense_module(x)
