@@ -267,27 +267,23 @@ class EEGNetImprovement3(torch.nn.Module):
 
 
     def forward(self, x):
-        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
+        # Step 1: Apply the first convolutional layer (Temporal Convolution)
+        x = self.conv_module[0](x)
 
-        # Temporal convolution
-        x = self.conv_module[0](x)  # Apply the first convolution layer
-        x = self.conv_module[1](x)  # Apply batch norm
-
-        # Generate and add positional embeddings
+        # Step 2: Generate positional embeddings and add them to the convolution output
         temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
-        d_model = x.shape[3]
+        d_model = x.shape[1]  # Assuming positional embeddings are added across the channel dimension
         pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust shape for broadcasting
+        x += pos_embeddings  # Add positional embeddings to the feature map
 
-        
-        # Adjust pos_embeddings shape for broadcasting
-        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
-        
-        # Add positional embeddings to the convolution output
-        x += pos_embeddings
-        
-        # Proceed with the original EEGNet layers
+        # Step 3: Apply batch normalization (the second module in self.conv_module)
+        x = self.conv_module[1](x)
+
+        # Step 4: Proceed with the rest of the layers in the conv_module
         for layer in self.conv_module[2:]:
-            x = layer(x)
+        x = layer(x)
 
+        # Process the output through the dense_module
         x = self.dense_module(x)
         return x
