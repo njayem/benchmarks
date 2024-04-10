@@ -248,23 +248,23 @@ class EEGNetImprovement3(torch.nn.Module):
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
-        position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+        position = torch.arange(length, dtype=torch.float, device=device).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2, device=device).float() * -(np.log(10000.0) / d_model))
 
         positional_embedding = torch.zeros((length, d_model), device=device)
         positional_embedding[:, 0::2] = torch.sin(position * div_term)
 
         # Ensure that we do not exceed d_model when assigning cosine values
-        cos_indices = torch.arange(1, d_model, 2).to(device)
-        if d_model % 2 == 1:  # If d_model is odd, adjust the div_term calculation for cosine values
-            # Recalculate div_term for cosine to properly align with the number of cosine indices
-            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+        if d_model % 2 == 1:
+            # If d_model is odd, adjust indices and div_term for cosine values
+            cos_indices = torch.arange(1, d_model, 2, device=device)
+            div_term_cos = torch.exp(cos_indices.float() * -(np.log(10000.0) / d_model))
             positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
         else:
+            cos_indices = torch.arange(1, d_model, 2, device=device)
             positional_embedding[:, 1::2] = torch.cos(position * div_term)
 
         return positional_embedding
-
 
     def forward(self, x):
         """Returns the output of the model with positional embeddings added after the first temporal convolution."""
