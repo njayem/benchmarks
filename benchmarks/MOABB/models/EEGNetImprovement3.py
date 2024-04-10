@@ -284,6 +284,10 @@ class EEGNetImprovement3(torch.nn.Module):
         d_model = x.shape[1]  # Assuming positional embeddings are added across the channel dimension
         pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
         pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust shape for broadcasting
+        
+        print("x shape:", x.shape)
+        print("pos_embeddings shape:", pos_embeddings.shape)
+        
         x += pos_embeddings  # Add positional embeddings to the feature map
 
         # Step 3: Apply batch normalization (the second module in self.conv_module)
