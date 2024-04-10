@@ -259,38 +259,21 @@ class EEGNetImprovement3(torch.nn.Module):
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
-<<<<<<< HEAD
-        position = torch.arange(length, dtype=torch.float, device=device).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2, device=device).float() * -(np.log(10000.0) / d_model))
-
-        positional_embedding = torch.zeros((length, d_model), device=device)
-        positional_embedding[:, 0::2] = torch.sin(position * div_term)
-
-        # Ensure that we do not exceed d_model when assigning cosine values
-        if d_model % 2 == 1:
-            # If d_model is odd, adjust indices and div_term for cosine values
-            cos_indices = torch.arange(1, d_model, 2, device=device)
-            div_term_cos = torch.exp(cos_indices.float() * -(np.log(10000.0) / d_model))
-            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
-        else:
-            cos_indices = torch.arange(1, d_model, 2, device=device)
-            positional_embedding[:, 1::2] = torch.cos(position * div_term)
-=======
         positional_embedding = torch.zeros((length, d_model), device=device)
         # Omega: scaling factor for adjusting frequencies of the sine and cosine functions.
-        omega = 10000 ** (torch.arange(0, d_model, 2).float() / d_model).to(device)
+        omega = 10000 ** (torch.arange(0, d_model, 2, device=device).float() / d_model)
         
-        for pos in range(length):
-            # Even positions use sine, odd positions use cosine.
-            if pos % 2 == 0:
-                positional_embedding[pos, 0::2] = torch.sin(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
-                positional_embedding[pos, 1::2] = torch.cos(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
-            else:
-                positional_embedding[pos, 0::2] = torch.cos(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
-                positional_embedding[pos, 1::2] = torch.sin(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
->>>>>>> 2792cdb548d573facdc1c2d1e6ecbd7c0265f9d2
+        pos_range = torch.arange(length, device=device).unsqueeze(1)  # Generate position range on the correct device
+        even_indices = torch.arange(0, d_model, 2, device=device)
+        odd_indices = torch.arange(1, d_model, 2, device=device)
+
+        # Apply sine to even positions and cosine to odd positions across all positions
+        positional_embedding[:, 0::2] = torch.sin(pos_range * omega / d_model)
+        positional_embedding[:, 1::2] = torch.cos(pos_range * omega / d_model)
 
         return positional_embedding
+
+
 
     def forward(self, x):
         # Step 1: Apply the first convolutional layer (Temporal Convolution)
