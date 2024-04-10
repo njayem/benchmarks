@@ -11,12 +11,21 @@ import numpy as np
 
 
 class EEGNetImprovement3(torch.nn.Module):
-    """EEGNetImprovement3.
+    """
+    EEGNetImprovement3 is an adaptation of the EEGNet architecture with enhancements for better positional encoding 
+    in processing EEG signals. This model integrates sinusoidal positional embeddings to improve the network's 
+    understanding of the temporal order of inputs, which is crucial for tasks involving time-series data like EEG.
 
+    Positional embeddings are generated according to a given formula where sine is used for even positions 
+    and cosine for odd positions, distinguishing between different points in the sequence based on their order.
+    
+    This approach to positional encoding differs from the dimension-based alternation (used in models like the Transformer), 
+    focusing instead on sequence order through position-based alternation to encode temporal information directly into the model.
+    
     Arguments
     ---------
     input_shape: tuple
-        The shape of the input.
+        The shape of the input (Batch size, Time steps, Channels, 1).
     cnn_temporal_kernels: int
         Number of kernels in the 2d temporal convolution.
     cnn_temporal_kernelsize: tuple
@@ -34,7 +43,7 @@ class EEGNetImprovement3(torch.nn.Module):
     cnn_septemporal_pool: tuple
         Pool size and stride after the 2d temporal separable convolution.
     cnn_pool_type: string
-        Pooling type.
+        Pooling type ('avg' or 'max').
     dropout: float
         Dropout probability.
     dense_max_norm: float
@@ -42,15 +51,15 @@ class EEGNetImprovement3(torch.nn.Module):
     dense_n_neurons: int
         Number of output neurons.
     activation_type: str
-        Activation function of the hidden layers.
+        Activation function of the hidden layers ('relu', 'elu', etc.).
 
     Example
     -------
-    #>>> inp_tensor = torch.rand([1, 200, 32, 1])
-    #>>> model = EEGNet(input_shape=inp_tensor.shape)
-    #>>> output = model(inp_tensor)
-    #>>> output.shape
-    #torch.Size([1,4])
+    >>> inp_tensor = torch.rand([1, 200, 32, 1])
+    >>> model = EEGNetImprovement3(input_shape=inp_tensor.shape)
+    >>> output = model(inp_tensor)
+    >>> output.shape
+    torch.Size([1, 4])
     """
 
     def __init__(
@@ -238,7 +247,9 @@ class EEGNetImprovement3(torch.nn.Module):
 
     def generate_positional_embeddings(self, length, d_model, device):
         """
-        Generate sinusoidal positional embeddings.
+        Generate sinusoidal positional embeddings with a unique approach: using sine for even positions
+        and cosine for odd positions. This method applies the trigonometric functions across all dimensions 
+        for a given position based on its order in the sequence, enhancing the model's temporal resolution.
 
         Parameters:
         length (int): The temporal length of the sequence.
@@ -248,20 +259,18 @@ class EEGNetImprovement3(torch.nn.Module):
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
-        position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
-
         positional_embedding = torch.zeros((length, d_model), device=device)
-        positional_embedding[:, 0::2] = torch.sin(position * div_term)
-
-        # Ensure that we do not exceed d_model when assigning cosine values
-        cos_indices = torch.arange(1, d_model, 2).to(device)
-        if d_model % 2 == 1:  # If d_model is odd, adjust the div_term calculation for cosine values
-            # Recalculate div_term for cosine to properly align with the number of cosine indices
-            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
-            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
-        else:
-            positional_embedding[:, 1::2] = torch.cos(position * div_term)
+        # Omega: scaling factor for adjusting frequencies of the sine and cosine functions.
+        omega = 10000 ** (torch.arange(0, d_model, 2).float() / d_model).to(device)
+        
+        for pos in range(length):
+            # Even positions use sine, odd positions use cosine.
+            if pos % 2 == 0:
+                positional_embedding[pos, 0::2] = torch.sin(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
+                positional_embedding[pos, 1::2] = torch.cos(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
+            else:
+                positional_embedding[pos, 0::2] = torch.cos(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
+                positional_embedding[pos, 1::2] = torch.sin(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
 
         return positional_embedding
 
