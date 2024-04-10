@@ -285,6 +285,8 @@ class EEGNetImprovement3(torch.nn.Module):
         pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
         pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust shape for broadcasting
         
+        pos_embeddings = pos_embeddings.reshape(1, 500, 17, 1)  # Example reshape to match 'x'
+
         print("x shape:", x.shape)
         print("pos_embeddings shape:", pos_embeddings.shape)
         
