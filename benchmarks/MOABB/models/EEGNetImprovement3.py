@@ -11,12 +11,21 @@ import numpy as np
 
 
 class EEGNetImprovement3(torch.nn.Module):
-    """EEGNetImprovement3.
+    """
+    EEGNetImprovement3 is an adaptation of the EEGNet architecture with enhancements for better positional encoding 
+    in processing EEG signals. This model integrates sinusoidal positional embeddings to improve the network's 
+    understanding of the temporal order of inputs, which is crucial for tasks involving time-series data like EEG.
 
+    Positional embeddings are generated according to a given formula where sine is used for even positions 
+    and cosine for odd positions, distinguishing between different points in the sequence based on their order.
+    
+    This approach to positional encoding differs from the dimension-based alternation (used in models like the Transformer), 
+    focusing instead on sequence order through position-based alternation to encode temporal information directly into the model.
+    
     Arguments
     ---------
     input_shape: tuple
-        The shape of the input.
+        The shape of the input (Batch size, Time steps, Channels, 1).
     cnn_temporal_kernels: int
         Number of kernels in the 2d temporal convolution.
     cnn_temporal_kernelsize: tuple
@@ -34,7 +43,7 @@ class EEGNetImprovement3(torch.nn.Module):
     cnn_septemporal_pool: tuple
         Pool size and stride after the 2d temporal separable convolution.
     cnn_pool_type: string
-        Pooling type.
+        Pooling type ('avg' or 'max').
     dropout: float
         Dropout probability.
     dense_max_norm: float
@@ -42,15 +51,15 @@ class EEGNetImprovement3(torch.nn.Module):
     dense_n_neurons: int
         Number of output neurons.
     activation_type: str
-        Activation function of the hidden layers.
+        Activation function of the hidden layers ('relu', 'elu', etc.).
 
     Example
     -------
-    #>>> inp_tensor = torch.rand([1, 200, 32, 1])
-    #>>> model = EEGNet(input_shape=inp_tensor.shape)
-    #>>> output = model(inp_tensor)
-    #>>> output.shape
-    #torch.Size([1,4])
+    >>> inp_tensor = torch.rand([1, 200, 32, 1])
+    >>> model = EEGNetImprovement3(input_shape=inp_tensor.shape)
+    >>> output = model(inp_tensor)
+    >>> output.shape
+    torch.Size([1, 4])
     """
 
     def __init__(
@@ -238,7 +247,9 @@ class EEGNetImprovement3(torch.nn.Module):
 
     def generate_positional_embeddings(self, length, d_model, device):
         """
-        Generate sinusoidal positional embeddings.
+        Generate sinusoidal positional embeddings with a unique approach: using sine for even positions
+        and cosine for odd positions. This method applies the trigonometric functions across all dimensions 
+        for a given position based on its order in the sequence, enhancing the model's temporal resolution.
 
         Parameters:
         length (int): The temporal length of the sequence.
@@ -248,6 +259,7 @@ class EEGNetImprovement3(torch.nn.Module):
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
+<<<<<<< HEAD
         position = torch.arange(length, dtype=torch.float, device=device).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2, device=device).float() * -(np.log(10000.0) / d_model))
 
@@ -263,31 +275,41 @@ class EEGNetImprovement3(torch.nn.Module):
         else:
             cos_indices = torch.arange(1, d_model, 2, device=device)
             positional_embedding[:, 1::2] = torch.cos(position * div_term)
+=======
+        positional_embedding = torch.zeros((length, d_model), device=device)
+        # Omega: scaling factor for adjusting frequencies of the sine and cosine functions.
+        omega = 10000 ** (torch.arange(0, d_model, 2).float() / d_model).to(device)
+        
+        for pos in range(length):
+            # Even positions use sine, odd positions use cosine.
+            if pos % 2 == 0:
+                positional_embedding[pos, 0::2] = torch.sin(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
+                positional_embedding[pos, 1::2] = torch.cos(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
+            else:
+                positional_embedding[pos, 0::2] = torch.cos(torch.arange(0, d_model, 2).float() * omega / d_model).to(device)
+                positional_embedding[pos, 1::2] = torch.sin(torch.arange(1, d_model, 2).float() * omega / d_model).to(device)
+>>>>>>> 2792cdb548d573facdc1c2d1e6ecbd7c0265f9d2
 
         return positional_embedding
 
     def forward(self, x):
-        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
+        # Step 1: Apply the first convolutional layer (Temporal Convolution)
+        x = self.conv_module[0](x)
 
-        # Temporal convolution
-        x = self.conv_module[0](x)  # Apply the first convolution layer
-        x = self.conv_module[1](x)  # Apply batch norm
-
-        # Generate and add positional embeddings
+        # Step 2: Generate positional embeddings and add them to the convolution output
         temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
-        d_model = x.shape[3]
+        d_model = x.shape[1]  # Assuming positional embeddings are added across the channel dimension
         pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust shape for broadcasting
+        x += pos_embeddings  # Add positional embeddings to the feature map
 
-        
-        # Adjust pos_embeddings shape for broadcasting
-        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
-        
-        # Add positional embeddings to the convolution output
-        x += pos_embeddings
-        
-        # Proceed with the original EEGNet layers
+        # Step 3: Apply batch normalization (the second module in self.conv_module)
+        x = self.conv_module[1](x)
+
+        # Step 4: Proceed with the rest of the layers in the conv_module
         for layer in self.conv_module[2:]:
             x = layer(x)
 
+        # Process the output through the dense_module
         x = self.dense_module(x)
         return x
