@@ -1,14 +1,13 @@
 """
-SSPE_EEGNet Improvement by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+SSPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
-This version, named SSPE_EEGNet (Standard Sinusoidal Positional Encoding EEGNet), introduces modifications to enhance positional encoding for improved temporal sequence analysis.
-
+This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
 Original Author:
  * Davide Borra, 2021
 
 Modifications by:
- * Nadine El-Mufit
+ * Nadine El-Mufit, 2024
 """
 
 import torch
@@ -18,7 +17,11 @@ import numpy as np
 
 class SSPE_EEGNet(torch.nn.Module):
     """
-    SSPE_EEGNet (Standard Sinusoidal Positional Encoding EEGNet) is an enhancement of the original EEGNet 
+    SSPE_EEGNet.
+    
+    Description
+    ---------
+    (Standard Sinusoidal Positional Encoding EEGNet) is an enhancement of the original EEGNet 
     designed specifically for improved handling of EEG data by employing consistent sinusoidal positional embeddings. 
     This version applies a fixed pattern of sine for even and cosine for odd indices across all positions in the sequence, 
     which helps the network maintain an accurate perception of the temporal order throughout the EEG signal processing.
@@ -26,7 +29,7 @@ class SSPE_EEGNet(torch.nn.Module):
     This model is particularly suited for EEG applications such as P300, error-related negativity, motor execution, and 
     motor imagery decoding, where understanding the exact sequence of EEG data points is crucial.
 
-    Arguments:
+    Arguments
     ---------
     input_shape : tuple
         Specifies the shape of the input tensor (Batch size, Time steps, Channels, 1).
@@ -101,12 +104,15 @@ class SSPE_EEGNet(torch.nn.Module):
             activation = torch.nn.SELU()
         else:
             raise ValueError("Wrong hidden activation function")
+       
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+        
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
+        
         # Temporal convolution
         self.conv_module.add_module(
             "conv_0",
@@ -126,6 +132,7 @@ class SSPE_EEGNet(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
+        
         # Spatial depthwise convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
@@ -250,7 +257,7 @@ class SSPE_EEGNet(torch.nn.Module):
 
 def generate_positional_embeddings(self, length, d_model, device):
     """
-    Generate sinusoidal positional embeddings for the EEGNet model using a standard sinusoidal encoding approach.
+    Generate sinusoidal positional embeddings for the EEGNet model using a (standard) sinusoidal encoding approach.
     This method consistently applies sine functions to even indices and cosine functions to odd indices of the embedding 
     vector for each position. This consistent pattern across all positions helps the network to process temporal sequence 
     data effectively, crucial for accurate EEG signal analysis.

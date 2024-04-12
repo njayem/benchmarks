@@ -1,16 +1,25 @@
-"""EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
-Shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals.
-It was proposed for P300, error-related negativity, motor execution, motor imagery decoding.
-
-Authors
- * Davide Borra, 2021
 """
+EEGNetLeaky by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
+suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
+This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
+Original Author:
+ * Davide Borra, 2021
+
+Modifications by:
+ * Nadine El-Mufit, 2024
+"""
+
 import torch
 import speechbrain as sb
 
 
 class EEGNetLeaky(torch.nn.Module):
-    """EEGNet.
+    """EEGNetLeaky.
+    
+    Description
+    ---------
+    This model idea for EEGNet enhancement incorporates Leaky ReLU activation functions without normalization layers and dropout.
 
     Arguments
     ---------
@@ -87,13 +96,16 @@ class EEGNetLeaky(torch.nn.Module):
             activation = torch.nn.SELU()
         else:
             raise ValueError("Wrong hidden activation function")
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+       
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
-        # Temporal convolution
+        
+        # Temporal Convolution
         self.conv_module.add_module(
             "conv_0",
             sb.nnet.CNN.Conv2d(
@@ -107,7 +119,7 @@ class EEGNetLeaky(torch.nn.Module):
             ),
         )
 
-        # Spatial depthwise convolution
+         # Spatial Depthwise Convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
         )
@@ -124,7 +136,6 @@ class EEGNetLeaky(torch.nn.Module):
                 swap=True,
             ),
         )
-
         self.conv_module.add_module("act_1", activation)
         self.conv_module.add_module(
             "pool_1",
@@ -136,7 +147,7 @@ class EEGNetLeaky(torch.nn.Module):
             ),
         )
 
-        # Temporal separable convolution
+        # Temporal Separable Convolution
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
         )

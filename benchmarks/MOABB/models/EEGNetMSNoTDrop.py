@@ -1,17 +1,21 @@
-"""EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
-Shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals.
-It was proposed for P300, error-related negativity, motor execution, motor imagery decoding.
-
-Authors
- * Davide Borra, 2021
 """
+EEGNetMSNoTDrop by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
+suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
+This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
+Original Author:
+ * Davide Borra, 2021
+
+Modifications by:
+ * Nadine El-Mufit, 2024
+"""
+
 import torch
 import speechbrain as sb
-import numpy as np
 
 
-class SSPE_EEGNet(torch.nn.Module):
-    """SSPE_EEGNet.
+class EEGNetMSNoTDrop(torch.nn.Module):
+    """EEGNetMSNoTDrop.
 
     Arguments
     ---------
@@ -86,17 +90,24 @@ class SSPE_EEGNet(torch.nn.Module):
             activation = torch.nn.PReLU()
         elif activation_type == "selu":
             activation = torch.nn.SELU()
+        elif activation_type == "mish":
+            activation = torch.nn.Mish()
+        elif activation_type == "swish":
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+        
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
-        # Temporal convolution
+
+        # LAYER 1: TEMPORAL CONVOLUTION
         self.conv_module.add_module(
-            "conv_0",
+            "conv_1",
             sb.nnet.CNN.Conv2d(
                 in_channels=1,
                 out_channels=cnn_temporal_kernels,
@@ -107,18 +118,21 @@ class SSPE_EEGNet(torch.nn.Module):
                 swap=True,
             ),
         )
+
+        # LAYER 2: BATCH NORMALIZATION AFTER TEMPORAL CONVOLUTION
         self.conv_module.add_module(
-            "bnorm_0",
+            "bnorm_2",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
-        # Spatial depthwise convolution
-        cnn_spatial_kernels = (
-            cnn_spatial_depth_multiplier * cnn_temporal_kernels
-        )
+
+        # LAYER 3: ACTIVATION AFTER BATCH NORMALIZATION
+        self.conv_module.add_module("act_3", activation)
+
+        # LAYER 4: SPATIAL DEPTHWISE CONVOLUTION
         self.conv_module.add_module(
-            "conv_1",
+            "conv_4",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_temporal_kernels,
                 out_channels=cnn_spatial_kernels,
@@ -130,15 +144,21 @@ class SSPE_EEGNet(torch.nn.Module):
                 swap=True,
             ),
         )
+
+        # LAYER 5: BATCH NORMALIZATION AFTER SPATIAL DEPTHWISE CONVOLUTION
         self.conv_module.add_module(
-            "bnorm_1",
+            "bnorm_5",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_spatial_kernels, momentum=0.01, affine=True,
             ),
         )
-        self.conv_module.add_module("act_1", activation)
+
+        # LAYER 6: ACTIVATION AFTER BATCH NORMALIZATION
+        self.conv_module.add_module("act_6", activation)
+
+        # LAYER 7: POOLING LAYER
         self.conv_module.add_module(
-            "pool_1",
+            "pool_7",
             sb.nnet.pooling.Pooling2d(
                 pool_type=cnn_pool_type,
                 kernel_size=cnn_spatial_pool,
@@ -146,14 +166,10 @@ class SSPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
-        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
 
-        # Temporal separable convolution
-        cnn_septemporal_kernels = (
-            cnn_spatial_kernels * cnn_septemporal_depth_multiplier
-        )
+        # LAYER 8: SEPARABLE (DEPTHWISE) CONVOLUTION
         self.conv_module.add_module(
-            "conv_2",
+            "conv_8",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_spatial_kernels,
                 out_channels=cnn_septemporal_kernels,
@@ -166,11 +182,11 @@ class SSPE_EEGNet(torch.nn.Module):
             ),
         )
 
-        if cnn_septemporal_point_kernels is None:
-            cnn_septemporal_point_kernels = cnn_septemporal_kernels
+        # LAYER 9: SEPARABLE (POINTWISE) CONVOLUTION WITH DROPOUT
+        self.conv_module.add_module("dropout_9", torch.nn.Dropout(p=dropout))
 
         self.conv_module.add_module(
-            "conv_3",
+            "conv_10",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_kernels,
                 out_channels=cnn_septemporal_point_kernels,
@@ -180,17 +196,23 @@ class SSPE_EEGNet(torch.nn.Module):
                 swap=True,
             ),
         )
+
+        # LAYER 10: BATCH NORMALIZATION AFTER SEPARABLE (POINTWISE) CONVOLUTION
         self.conv_module.add_module(
-            "bnorm_3",
+            "bnorm_11",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_septemporal_point_kernels,
                 momentum=0.01,
                 affine=True,
             ),
         )
-        self.conv_module.add_module("act_3", activation)
+
+        # LAYER 11: ACTIVATION AFTER BATCH NORMALIZATION
+        self.conv_module.add_module("act_12", activation)
+
+        # LAYER 12: POOLING LAYER
         self.conv_module.add_module(
-            "pool_3",
+            "pool_13",
             sb.nnet.pooling.Pooling2d(
                 pool_type=cnn_pool_type,
                 kernel_size=cnn_septemporal_pool,
@@ -198,27 +220,30 @@ class SSPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
-        self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
 
         # Shape of intermediate feature maps
         out = self.conv_module(
             torch.ones((1,) + tuple(input_shape[1:-1]) + (1,))
         )
-        dense_input_size = self._num_flat_features(out)
+
         # DENSE MODULE
+        dense_input_size = self._num_flat_features(out)
         self.dense_module = torch.nn.Sequential()
         self.dense_module.add_module(
-            "flatten", torch.nn.Flatten(),
+            "flatten_14", torch.nn.Flatten(),
         )
         self.dense_module.add_module(
-            "fc_out",
+            "fc_out_15",
             sb.nnet.linear.Linear(
                 input_size=dense_input_size,
                 n_neurons=dense_n_neurons,
                 max_norm=dense_max_norm,
             ),
         )
-        self.dense_module.add_module("act_out", torch.nn.LogSoftmax(dim=1))
+
+        # LAYER 14: FINAL SOFTMAX ACTIVATION FUNCTION
+        self.dense_module.add_module("act_out_16", torch.nn.LogSoftmax(dim=1))
+
 
     def _num_flat_features(self, x):
         """Returns the number of flattened features from a tensor.
@@ -235,59 +260,14 @@ class SSPE_EEGNet(torch.nn.Module):
             num_features *= s
         return num_features
 
-
-    def generate_positional_embeddings(self, length, d_model, device):
-        """
-        Generate sinusoidal positional embeddings.
-
-        Parameters:
-        length (int): The temporal length of the sequence.
-        d_model (int): The dimensionality of the embeddings.
-        device (torch.device): The device to generate the embeddings on.
-
-        Returns:
-        torch.Tensor: The positional embeddings with shape (length, d_model).
-        """
-        position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
-
-        positional_embedding = torch.zeros((length, d_model), device=device)
-        positional_embedding[:, 0::2] = torch.sin(position * div_term)
-
-        # Ensure that we do not exceed d_model when assigning cosine values
-        cos_indices = torch.arange(1, d_model, 2).to(device)
-        if d_model % 2 == 1:  # If d_model is odd, adjust the div_term calculation for cosine values
-            # Recalculate div_term for cosine to properly align with the number of cosine indices
-            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
-            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
-        else:
-            positional_embedding[:, 1::2] = torch.cos(position * div_term)
-
-        return positional_embedding
-
-
     def forward(self, x):
-        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
+        """Returns the output of the model.
 
-        # Temporal convolution
-        x = self.conv_module[0](x)  # Apply the first convolution layer
-        x = self.conv_module[1](x)  # Apply batch norm
-
-        # Generate and add positional embeddings
-        temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
-        d_model = x.shape[3]
-        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
-
-        
-        # Adjust pos_embeddings shape for broadcasting
-        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
-        
-        # Add positional embeddings to the convolution output
-        x += pos_embeddings
-        
-        # Proceed with the original EEGNet layers
-        for layer in self.conv_module[2:]:
-            x = layer(x)
-
+        Arguments
+        ---------
+        x : torch.Tensor (batch, time, EEG channel, channel)
+            Input to convolve. 4d tensors are expected.
+        """
+        x = self.conv_module(x)
         x = self.dense_module(x)
         return x

@@ -5,12 +5,17 @@ It was proposed for P300, error-related negativity, motor execution, motor image
 Authors
  * Davide Borra, 2021
 """
+
 import torch
 import speechbrain as sb
 
 
 class EEGNet(torch.nn.Module):
     """EEGNet.
+    
+    Description
+    ---------
+    Vanilla EEGNet model.
 
     Arguments
     ---------
@@ -83,17 +88,18 @@ class EEGNet(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-        elif activation_type == "selu":
-            activation = torch.nn.SELU()
         else:
             raise ValueError("Wrong hidden activation function")
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+       
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
-        # Temporal convolution
+        
+        # Temporal Convolution
         self.conv_module.add_module(
             "conv_0",
             sb.nnet.CNN.Conv2d(
@@ -112,7 +118,8 @@ class EEGNet(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
-        # Spatial depthwise convolution
+        
+        # Spatial Depthwise Convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
         )
@@ -147,7 +154,7 @@ class EEGNet(torch.nn.Module):
         )
         self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
 
-        # Temporal separable convolution
+        # Temporal Separable Convolution
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
         )

@@ -1,16 +1,25 @@
-"""EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+"""EEGNetMishx2SepLessDropout by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
 Shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals.
 It was proposed for P300, error-related negativity, motor execution, motor imagery decoding.
 
 Authors
  * Davide Borra, 2021
+ 
+Modifications by:
+ * Nadine El-Mufti, 2024
 """
 import torch
 import speechbrain as sb
 
 
-class EEGNetImprovement2(torch.nn.Module):
-    """EEGNetImprovement2.
+class EEGNetMishx2SepLessDropout(torch.nn.Module):
+    """EEGNetMishx2SepLessDropout.
+    
+    Description
+    ---------
+    This model refines EEGNet by removing one dropout layer and adding an extra Convolutional 2D layer for deeper feature extraction. Notably, 
+    it introduces another Separable 2D convolutional layer, enhancing feature dissection without dropout regularization. 
+    The network maintains standard average pooling and employs Mish activation functions for improved discrimination and generalization.
 
     Arguments
     ---------
@@ -46,7 +55,7 @@ class EEGNetImprovement2(torch.nn.Module):
     Example
     -------
     #>>> inp_tensor = torch.rand([1, 200, 32, 1])
-    #>>> model = EEGNet(input_shape=inp_tensor.shape)
+    #>>> model = EEGNetImprovement(input_shape=inp_tensor.shape)
     #>>> output = model(inp_tensor)
     #>>> output.shape
     #torch.Size([1,4])
@@ -68,7 +77,7 @@ class EEGNetImprovement2(torch.nn.Module):
         dropout=0.5,
         dense_max_norm=0.25,
         dense_n_neurons=4,
-        activation_type="elu",
+        activation_type="mish",
     ):
         super().__init__()
         if input_shape is None:
@@ -83,18 +92,24 @@ class EEGNetImprovement2(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-        elif activation_type == "selu":
+        elif activation_type == "selu": # New Activation Function
             activation = torch.nn.SELU()
+        elif activation_type == "mish": # New Activation Function
+            activation = torch.nn.Mish()
+        elif activation_type == "swish": # New Activation Function
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+        
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
 
-        # Temporal convolution (FIRST)
+        # Temporal Convolution
         self.conv_module.add_module(
             "conv_0",
             sb.nnet.CNN.Conv2d(
@@ -113,34 +128,13 @@ class EEGNetImprovement2(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
-
-
-        # Temporal convolution (SECOND)
-        self.conv_module.add_module(
-            "conv_1",
-            sb.nnet.CNN.Conv2d(
-                in_channels=cnn_temporal_kernels,
-                out_channels=cnn_temporal_kernels,
-                kernel_size=cnn_temporal_kernelsize,
-                padding="same",
-                padding_mode="constant",
-                bias=False,
-                swap=True,
-            ),
-        )
-        self.conv_module.add_module(
-            "bnorm_1",
-            sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
-            ),
-        )
-   
-        # Spatial depthwise convolution (FIRST)
+        
+        # Spatial Depthwise Convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
         )
         self.conv_module.add_module(
-            "conv_2",
+            "conv_1",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_temporal_kernels,
                 out_channels=cnn_spatial_kernels,
@@ -153,42 +147,12 @@ class EEGNetImprovement2(torch.nn.Module):
             ),
         )
         self.conv_module.add_module(
-            "bnorm_2",
+            "bnorm_1",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_spatial_kernels, momentum=0.01, affine=True,
             ),
         )
-
-
-        # # Spatial depthwise convolution (SECOND)
-        # cnn_spatial_kernels = (
-        #     cnn_spatial_depth_multiplier * cnn_temporal_kernels
-        # )
-        # self.conv_module.add_module(
-        #     "conv_3",
-        #     sb.nnet.CNN.Conv2d(
-        #         in_channels=cnn_spatial_kernels,
-        #         out_channels=cnn_spatial_kernels,
-        #         kernel_size=(1, C),
-        #         groups=cnn_temporal_kernels,
-        #         padding="valid",
-        #         bias=False,
-        #         max_norm=cnn_spatial_max_norm,
-        #         swap=True,
-        #     ),
-        # )
-        # self.conv_module.add_module(
-        #     "bnorm_3",
-        #     sb.nnet.normalization.BatchNorm2d(
-        #         input_size=cnn_spatial_kernels, momentum=0.01, affine=True,
-        #     ),
-        # )
-
-
-        # ELU ACTIVATION LAYER
         self.conv_module.add_module("act_1", activation)
-
-        # POOLING LAYER
         self.conv_module.add_module(
             "pool_1",
             sb.nnet.pooling.Pooling2d(
@@ -199,20 +163,12 @@ class EEGNetImprovement2(torch.nn.Module):
             ),
         )
 
-
-        # DROP-OUT
-        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
-
-
-        # Temporal separable convolution
+        # Temporal Separable Convolution (First)
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
         )
-
-
-        # DEPTHWISE CONVOLUTION
         self.conv_module.add_module(
-            "conv_3",
+            "conv_2",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_spatial_kernels,
                 out_channels=cnn_septemporal_kernels,
@@ -228,10 +184,8 @@ class EEGNetImprovement2(torch.nn.Module):
         if cnn_septemporal_point_kernels is None:
             cnn_septemporal_point_kernels = cnn_septemporal_kernels
 
-       
-        # POINTHWISE CONVOLUTION
         self.conv_module.add_module(
-            "conv_4",
+            "conv_3",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_kernels,
                 out_channels=cnn_septemporal_point_kernels,
@@ -242,22 +196,16 @@ class EEGNetImprovement2(torch.nn.Module):
             ),
         )
         self.conv_module.add_module(
-            "bnorm_4",
+            "bnorm_3",
             sb.nnet.normalization.BatchNorm2d(
                 input_size=cnn_septemporal_point_kernels,
                 momentum=0.01,
                 affine=True,
             ),
         )
-
-
-        # ELU ACTIVATION LAYER
-        self.conv_module.add_module("act_4", activation)
-
-
-        # POOLING LAYER
+        self.conv_module.add_module("act_3", activation)
         self.conv_module.add_module(
-            "pool_4",
+            "pool_3",
             sb.nnet.pooling.Pooling2d(
                 pool_type=cnn_pool_type,
                 kernel_size=cnn_septemporal_pool,
@@ -265,23 +213,62 @@ class EEGNetImprovement2(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
+        self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
+        
+        # Define the desired number of output channels
+        desired_output_channels = 16
 
+        # Temporal Separable Convolution (Second)
+        self.conv_module.add_module(
+            "conv_4",
+            sb.nnet.CNN.Conv2d(
+                in_channels=cnn_septemporal_point_kernels,
+                out_channels=desired_output_channels,  # Set to 16
+                kernel_size=cnn_septemporal_kernelsize,
+                groups=cnn_septemporal_point_kernels,
+                padding="same",
+                padding_mode="constant",
+                bias=False,
+                swap=True,
+            ),
+        )
+        self.conv_module.add_module(
+            "bnorm_4",
+            sb.nnet.normalization.BatchNorm2d(
+                input_size=desired_output_channels,  # Set to 16
+                momentum=0.01,
+                affine=True,
+            ),
+        )
+        self.conv_module.add_module("act_4", activation)
 
-        # DROP-OUT
-        self.conv_module.add_module("dropout_4", torch.nn.Dropout(p=dropout))
-
+        # Add conv_5 (pointwise convolution similar to conv_3)
+        self.conv_module.add_module(
+            "conv_5",
+            sb.nnet.CNN.Conv2d(
+                in_channels=desired_output_channels,  # Use the output channels from conv_4
+                out_channels=cnn_septemporal_point_kernels,  # Use the same number of output channels as conv_3
+                kernel_size=(1, 1),
+                padding="valid",
+                bias=False,
+                swap=True,
+            ),
+        )
+        self.conv_module.add_module(
+            "bnorm_5",
+            sb.nnet.normalization.BatchNorm2d(
+                input_size=cnn_septemporal_point_kernels,
+                momentum=0.01,
+                affine=True,
+            ),
+        )
+        self.conv_module.add_module("act_5", activation)
 
         # Shape of intermediate feature maps
         out = self.conv_module(
             torch.ones((1,) + tuple(input_shape[1:-1]) + (1,))
         )
-
-
-        # FLATTEN LAYER
         dense_input_size = self._num_flat_features(out)
-
-
-        # DENSE LAYER
         # DENSE MODULE
         self.dense_module = torch.nn.Sequential()
         self.dense_module.add_module(
@@ -295,10 +282,8 @@ class EEGNetImprovement2(torch.nn.Module):
                 max_norm=dense_max_norm,
             ),
         )
-
-
-        # SIGMOID FN
         self.dense_module.add_module("act_out", torch.nn.LogSoftmax(dim=1))
+
 
     def _num_flat_features(self, x):
         """Returns the number of flattened features from a tensor.

@@ -150,7 +150,7 @@ dense_max_norm: 0.25  # kernel max-norm constaint of the dense layer
 dropout: 0.008464 # @orion_step1: --dropout~"uniform(0.0, 0.5)"
 activation_type: 'elu'
 
-model: !new:models.EEGNetImprovement2Plus1.EEGNetImprovement2Plus1
+model: !new:models.EEGNet2xTemp.EEGNet2xTemp
     input_shape: !ref <input_shape>
     cnn_temporal_kernels: !ref <cnn_temporal_kernels>
     cnn_temporal_kernelsize: [!ref <cnn_temporal_kernelsize>, 1]

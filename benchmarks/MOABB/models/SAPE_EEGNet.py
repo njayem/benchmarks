@@ -1,15 +1,15 @@
 """
-EEGNet Improvement by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+SAPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
-This version introduces modifications to enhance positional encoding for improved temporal sequence analysis.
-
+This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
 Original Author:
  * Davide Borra, 2021
 
 Modifications by:
- * Nadine El-Mufit
+ * Nadine El-Mufit, 2024
 """
+
 import torch
 import speechbrain as sb
 import numpy as np
@@ -17,7 +17,11 @@ import numpy as np
 
 class SAPE_EEGNet(torch.nn.Module):
     """
-        SAPE_EEGNet (Sequence-Adaptive Positional Encoding EEGNet) is an enhanced version of the traditional EEGNet, 
+        SAPE_EEGNet.
+        
+        Description
+        ---------
+        (Sequence-Adaptive Positional Encoding EEGNet) is an enhanced version of the traditional EEGNet, 
         specifically tailored to improve the processing of EEG signals through advanced positional encoding techniques. 
         This model utilizes sinusoidal positional embeddings, which are crucial for capturing the temporal dynamics 
         inherent in EEG data. The embeddings differentiate positions within the sequence by applying sine functions 
@@ -27,7 +31,7 @@ class SAPE_EEGNet(torch.nn.Module):
         This architecture is designed to better handle tasks that require understanding of time-series data, such as 
         decoding P300, error-related negativity, motor execution, and motor imagery from single-trial EEG signals.
 
-        Arguments:
+        Arguments
         ---------
         input_shape : tuple
             Specifies the shape of the input tensor expected by the model, formatted as 
@@ -103,12 +107,15 @@ class SAPE_EEGNet(torch.nn.Module):
             activation = torch.nn.SELU()
         else:
             raise ValueError("Wrong hidden activation function")
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+        
         # T = input_shape[1]
         C = input_shape[2]
 
         # CONVOLUTIONAL MODULE
         self.conv_module = torch.nn.Sequential()
+        
         # Temporal convolution
         self.conv_module.add_module(
             "conv_0",
@@ -128,6 +135,7 @@ class SAPE_EEGNet(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
+        
         # Spatial depthwise convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
@@ -253,7 +261,7 @@ class SAPE_EEGNet(torch.nn.Module):
 
     def generate_positional_embeddings(self, length, d_model, device):
         """
-        Generate sinusoidal positional embeddings with a unique approach: using sine for even positions
+        Generate sinusoidal positional embeddings with a (unique) approach: using sine for even positions
         and cosine for odd positions. This method applies the trigonometric functions across all dimensions 
         for a given position based on its order in the sequence, enhancing the model's temporal resolution.
 
