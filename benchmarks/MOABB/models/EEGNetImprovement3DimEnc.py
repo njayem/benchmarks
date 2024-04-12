@@ -10,22 +10,13 @@ import speechbrain as sb
 import numpy as np
 
 
-class EEGNetImprovement3(torch.nn.Module):
-    """
-    EEGNetImprovement3 is an adaptation of the EEGNet architecture with enhancements for better positional encoding 
-    in processing EEG signals. This model integrates sinusoidal positional embeddings to improve the network's 
-    understanding of the temporal order of inputs, which is crucial for tasks involving time-series data like EEG.
+class SSPE_EEGNet(torch.nn.Module):
+    """SSPE_EEGNet.
 
-    Positional embeddings are generated according to a given formula where sine is used for even positions 
-    and cosine for odd positions, distinguishing between different points in the sequence based on their order.
-    
-    This approach to positional encoding differs from the dimension-based alternation (used in models like the Transformer), 
-    focusing instead on sequence order through position-based alternation to encode temporal information directly into the model.
-    
     Arguments
     ---------
     input_shape: tuple
-        The shape of the input (Batch size, Time steps, Channels, 1).
+        The shape of the input.
     cnn_temporal_kernels: int
         Number of kernels in the 2d temporal convolution.
     cnn_temporal_kernelsize: tuple
@@ -43,7 +34,7 @@ class EEGNetImprovement3(torch.nn.Module):
     cnn_septemporal_pool: tuple
         Pool size and stride after the 2d temporal separable convolution.
     cnn_pool_type: string
-        Pooling type ('avg' or 'max').
+        Pooling type.
     dropout: float
         Dropout probability.
     dense_max_norm: float
@@ -51,15 +42,15 @@ class EEGNetImprovement3(torch.nn.Module):
     dense_n_neurons: int
         Number of output neurons.
     activation_type: str
-        Activation function of the hidden layers ('relu', 'elu', etc.).
+        Activation function of the hidden layers.
 
     Example
     -------
-    >>> inp_tensor = torch.rand([1, 200, 32, 1])
-    >>> model = EEGNetImprovement3(input_shape=inp_tensor.shape)
-    >>> output = model(inp_tensor)
-    >>> output.shape
-    torch.Size([1, 4])
+    #>>> inp_tensor = torch.rand([1, 200, 32, 1])
+    #>>> model = EEGNet(input_shape=inp_tensor.shape)
+    #>>> output = model(inp_tensor)
+    #>>> output.shape
+    #torch.Size([1,4])
     """
 
     def __init__(
@@ -247,9 +238,7 @@ class EEGNetImprovement3(torch.nn.Module):
 
     def generate_positional_embeddings(self, length, d_model, device):
         """
-        Generate sinusoidal positional embeddings with a unique approach: using sine for even positions
-        and cosine for odd positions. This method applies the trigonometric functions across all dimensions 
-        for a given position based on its order in the sequence, enhancing the model's temporal resolution.
+        Generate sinusoidal positional embeddings.
 
         Parameters:
         length (int): The temporal length of the sequence.
@@ -259,46 +248,46 @@ class EEGNetImprovement3(torch.nn.Module):
         Returns:
         torch.Tensor: The positional embeddings with shape (length, d_model).
         """
-        positional_embedding = torch.zeros((length, d_model), device=device)
-        # Omega: scaling factor for adjusting frequencies of the sine and cosine functions.
-        omega = 10000 ** (torch.arange(0, d_model, 2, device=device).float() / d_model)
-        
-        pos_range = torch.arange(length, device=device).unsqueeze(1)  # Generate position range on the correct device
-        even_indices = torch.arange(0, d_model, 2, device=device)
-        odd_indices = torch.arange(1, d_model, 2, device=device)
+        position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
 
-        # Apply sine to even positions and cosine to odd positions across all positions
-        positional_embedding[:, 0::2] = torch.sin(pos_range * omega / d_model)
-        positional_embedding[:, 1::2] = torch.cos(pos_range * omega / d_model)
+        positional_embedding = torch.zeros((length, d_model), device=device)
+        positional_embedding[:, 0::2] = torch.sin(position * div_term)
+
+        # Ensure that we do not exceed d_model when assigning cosine values
+        cos_indices = torch.arange(1, d_model, 2).to(device)
+        if d_model % 2 == 1:  # If d_model is odd, adjust the div_term calculation for cosine values
+            # Recalculate div_term for cosine to properly align with the number of cosine indices
+            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
+        else:
+            positional_embedding[:, 1::2] = torch.cos(position * div_term)
 
         return positional_embedding
 
 
-
     def forward(self, x):
-        # Step 1: Apply the first convolutional layer (Temporal Convolution)
-        x = self.conv_module[0](x)
+        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
 
-        # Step 2: Generate positional embeddings and add them to the convolution output
+        # Temporal convolution
+        x = self.conv_module[0](x)  # Apply the first convolution layer
+        x = self.conv_module[1](x)  # Apply batch norm
+
+        # Generate and add positional embeddings
         temporal_length = x.shape[2]  # Assuming x shape is [Batch, Channels, Temporal, Features]
-        d_model = x.shape[1]  # Assuming positional embeddings are added across the channel dimension
+        d_model = x.shape[3]
         pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
-        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust shape for broadcasting
+
         
-        pos_embeddings = pos_embeddings.reshape(1, 500, 17, 1)  # Example reshape to match 'x'
-
-        print("x shape:", x.shape)
-        print("pos_embeddings shape:", pos_embeddings.shape)
+        # Adjust pos_embeddings shape for broadcasting
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
         
-        x += pos_embeddings  # Add positional embeddings to the feature map
-
-        # Step 3: Apply batch normalization (the second module in self.conv_module)
-        x = self.conv_module[1](x)
-
-        # Step 4: Proceed with the rest of the layers in the conv_module
+        # Add positional embeddings to the convolution output
+        x += pos_embeddings
+        
+        # Proceed with the original EEGNet layers
         for layer in self.conv_module[2:]:
             x = layer(x)
 
-        # Process the output through the dense_module
         x = self.dense_module(x)
         return x
