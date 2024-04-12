@@ -297,33 +297,33 @@ def generate_positional_embeddings(self, length, d_model, device):
 
         return positional_embedding
 
-def forward(self, x):
-    """Returns the output of the model with positional embeddings added after the first temporal convolution."""
+    def forward(self, x):
+        """Returns the output of the model with positional embeddings added after the first temporal convolution."""
 
-    # Step 1: Apply the first convolution layer
-    x = self.conv_module[0](x)
-    
-    # Step 2: Apply batch normalization
-    x = self.conv_module[1](x)
+        # Step 1: Apply the first convolution layer
+        x = self.conv_module[0](x)
+        
+        # Step 2: Apply batch normalization
+        x = self.conv_module[1](x)
 
-    # Step 3: Calculate the number of time steps and the model dimensions for positional embeddings
-    temporal_length = x.shape[2]
-    d_model = x.shape[3]
+        # Step 3: Calculate the number of time steps and the model dimensions for positional embeddings
+        temporal_length = x.shape[2]
+        d_model = x.shape[3]
 
-    # Step 4: Generate positional embeddings based on the current model configuration
-    pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
+        # Step 4: Generate positional embeddings based on the current model configuration
+        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
 
-    # Step 5: Adjust the shape of positional embeddings for broadcasting compatibility
-    pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
-    
-    # Step 6: Add positional embeddings to the convolution output to enrich features with positional information
-    x += pos_embeddings
-    
-    # Step 7: Continue processing through the subsequent layers of the convolutional module
-    for layer in self.conv_module[2:]:
-        x = layer(x)
+        # Step 5: Adjust the shape of positional embeddings for broadcasting compatibility
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(1)  # Shape: [1, 1, Temporal, Features]
+        
+        # Step 6: Add positional embeddings to the convolution output to enrich features with positional information
+        x += pos_embeddings
+        
+        # Step 7: Continue processing through the subsequent layers of the convolutional module
+        for layer in self.conv_module[2:]:
+            x = layer(x)
 
-    # Step 8: Pass the output through the dense module to get the final model output
-    x = self.dense_module(x)
-    
-    return x
+        # Step 8: Pass the output through the dense module to get the final model output
+        x = self.dense_module(x)
+        
+        return x
