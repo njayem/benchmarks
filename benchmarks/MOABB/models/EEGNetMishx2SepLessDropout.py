@@ -214,16 +214,13 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             ),
         )
         self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
-        
-        # Define the desired number of output channels
-        desired_output_channels = 16
 
         # Temporal Separable Convolution (Second)
         self.conv_module.add_module(
             "conv_4",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_point_kernels,
-                out_channels=desired_output_channels,  # Set to 16
+                out_channels=cnn_septemporal_point_kernels,  
                 kernel_size=cnn_septemporal_kernelsize,
                 groups=cnn_septemporal_point_kernels,
                 padding="same",
@@ -235,7 +232,7 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
         self.conv_module.add_module(
             "bnorm_4",
             sb.nnet.normalization.BatchNorm2d(
-                input_size=desired_output_channels,  # Set to 16
+                input_size=cnn_septemporal_point_kernels, 
                 momentum=0.01,
                 affine=True,
             ),
@@ -246,7 +243,7 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
         self.conv_module.add_module(
             "conv_5",
             sb.nnet.CNN.Conv2d(
-                in_channels=desired_output_channels,  # Use the output channels from conv_4
+                in_channels=cnn_septemporal_point_kernels,  # Use the output channels from conv_4
                 out_channels=cnn_septemporal_point_kernels,  # Use the same number of output channels as conv_3
                 kernel_size=(1, 1),
                 padding="valid",
