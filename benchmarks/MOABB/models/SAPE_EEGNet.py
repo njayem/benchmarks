@@ -287,30 +287,30 @@ class SAPE_EEGNet(torch.nn.Module):
 
         return positional_embedding
 
-def forward(self, x):
-    # Step 1: Apply the first convolutional layer to perform temporal convolution
-    x = self.conv_module[0](x)
+    def forward(self, x):
+        # Step 1: Apply the first convolutional layer to perform temporal convolution
+        x = self.conv_module[0](x)
 
-    # Step 2: Calculate and apply positional embeddings to the output of the first convolution
-    temporal_length = x.shape[2]  # Extract the number of temporal steps from the feature map
-    d_model = x.shape[1]  # Extract the number of channels as the dimensionality of the embeddings
-    pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
-    pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust the shape for broadcasting
-    
-    # Reshape positional embeddings to match the shape of the convolution output
-    pos_embeddings = pos_embeddings.reshape(1, 500, 17, 1)  # Example reshape to match 'x' dimensions
+        # Step 2: Calculate and apply positional embeddings to the output of the first convolution
+        temporal_length = x.shape[2]  # Extract the number of temporal steps from the feature map
+        d_model = x.shape[1]  # Extract the number of channels as the dimensionality of the embeddings
+        pos_embeddings = self.generate_positional_embeddings(temporal_length, d_model, x.device)
+        pos_embeddings = pos_embeddings.unsqueeze(0).unsqueeze(-1)  # Adjust the shape for broadcasting
+        
+        # Reshape positional embeddings to match the shape of the convolution output
+        pos_embeddings = pos_embeddings.reshape(1, 500, 17, 1)  # Example reshape to match 'x' dimensions
 
-    # Add positional embeddings to enhance the feature map with temporal information
-    x += pos_embeddings
+        # Add positional embeddings to enhance the feature map with temporal information
+        x += pos_embeddings
 
-    # Step 3: Apply batch normalization to stabilize and normalize the outputs
-    x = self.conv_module[1](x)
+        # Step 3: Apply batch normalization to stabilize and normalize the outputs
+        x = self.conv_module[1](x)
 
-    # Step 4: Continue processing with the subsequent layers in the convolutional module
-    for layer in self.conv_module[2:]:
-        x = layer(x)
+        # Step 4: Continue processing with the subsequent layers in the convolutional module
+        for layer in self.conv_module[2:]:
+            x = layer(x)
 
-    # Step 5: Final processing through the dense module to prepare the final output
-    x = self.dense_module(x)
-    
-    return x
+        # Step 5: Final processing through the dense module to prepare the final output
+        x = self.dense_module(x)
+        
+        return x
