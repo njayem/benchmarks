@@ -295,7 +295,7 @@ class SSPE_EEGNet(torch.nn.Module):
         else:
             positional_embedding[:, 1::2] = torch.cos(position * div_term)
 
-            return positional_embedding
+        return positional_embedding
 
     def forward(self, x):
         """Returns the output of the model with positional embeddings added after the first temporal convolution."""
