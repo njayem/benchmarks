@@ -255,47 +255,47 @@ class SSPE_EEGNet(torch.nn.Module):
             num_features *= s
         return num_features
 
-def generate_positional_embeddings(self, length, d_model, device):
-    """
-    Generate sinusoidal positional embeddings for the EEGNet model using a (standard) sinusoidal encoding approach.
-    This method consistently applies sine functions to even indices and cosine functions to odd indices of the embedding 
-    vector for each position. This consistent pattern across all positions helps the network to process temporal sequence 
-    data effectively, crucial for accurate EEG signal analysis.
+    def generate_positional_embeddings(self, length, d_model, device):
+        """
+        Generate sinusoidal positional embeddings for the EEGNet model using a (standard) sinusoidal encoding approach.
+        This method consistently applies sine functions to even indices and cosine functions to odd indices of the embedding 
+        vector for each position. This consistent pattern across all positions helps the network to process temporal sequence 
+        data effectively, crucial for accurate EEG signal analysis.
 
-    Parameters:
-    ----------
-    length : int
-        The number of time steps in the sequence for which embeddings are to be generated.
-    d_model : int
-        The number of dimensions of each embedding, representing the complexity of the encoding.
-    device : torch.device
-        The computing device (CPU, GPU) where the embeddings will be generated, affecting performance.
+        Parameters:
+        ----------
+        length : int
+            The number of time steps in the sequence for which embeddings are to be generated.
+        d_model : int
+            The number of dimensions of each embedding, representing the complexity of the encoding.
+        device : torch.device
+            The computing device (CPU, GPU) where the embeddings will be generated, affecting performance.
 
-    Returns:
-    -------
-    torch.Tensor
-        A tensor of shape (length, d_model), with each row representing the sinusoidal positional embeddings for a 
-        specific time step in the sequence.
+        Returns:
+        -------
+        torch.Tensor
+            A tensor of shape (length, d_model), with each row representing the sinusoidal positional embeddings for a 
+            specific time step in the sequence.
 
-    Example:
-    -------
-    >>> embeddings = self.generate_positional_embeddings(200, 64, torch.device('cuda'))
-    >>> embeddings.shape
-    (200, 64)
-    """
-    position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
-    div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+        Example:
+        -------
+        >>> embeddings = self.generate_positional_embeddings(200, 64, torch.device('cuda'))
+        >>> embeddings.shape
+        (200, 64)
+        """
+        position = torch.arange(length, dtype=torch.float).unsqueeze(1).to(device)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(np.log(10000.0) / d_model)).to(device)
 
-    positional_embedding = torch.zeros((length, d_model), device=device)
-    positional_embedding[:, 0::2] = torch.sin(position * div_term)
+        positional_embedding = torch.zeros((length, d_model), device=device)
+        positional_embedding[:, 0::2] = torch.sin(position * div_term)
 
-    if d_model % 2 == 1:  
-        div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
-        positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
-    else:
-        positional_embedding[:, 1::2] = torch.cos(position * div_term)
+        if d_model % 2 == 1:  
+            div_term_cos = torch.exp(torch.arange(0, d_model - 1, 2).float() * -(np.log(10000.0) / d_model)).to(device)
+            positional_embedding[:, 1::2] = torch.cos(position * div_term_cos)
+        else:
+            positional_embedding[:, 1::2] = torch.cos(position * div_term)
 
-        return positional_embedding
+            return positional_embedding
 
     def forward(self, x):
         """Returns the output of the model with positional embeddings added after the first temporal convolution."""
