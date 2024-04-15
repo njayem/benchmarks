@@ -18,8 +18,8 @@ import torch
 import speechbrain as sb
 
 
-class EEGNet3xTemp(torch.nn.Module):
-    """2xTemp2xSep.
+class EEGNet2xTemp2xSep(torch.nn.Module):
+    """EEGNet2xTemp2xSep.
     
     Description
     ---------
