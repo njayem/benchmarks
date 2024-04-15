@@ -1,6 +1,11 @@
-"""EEGNetMishx2SepLessDropout by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
-Shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals.
-It was proposed for P300, error-related negativity, motor execution, motor imagery decoding.
+"""
+EEGNetMishx2SepLessDropout by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+
+The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
+suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
+
+This modified version refines EEGNet by adding layers for deeper feature extraction and improved generalization, while removing dropout for
+cleaner signal processing.
 
 Authors
  * Davide Borra, 2021

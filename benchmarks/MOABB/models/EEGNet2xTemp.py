@@ -1,8 +1,11 @@
 """
 EEGNet Improvement by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
-This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
+
+This modified version doubles the temporal convolutional layer, enabling more comprehensive extraction of sequential data points.
+
 Original Author:
  * Davide Borra, 2021
 
@@ -92,11 +95,18 @@ class EEGNet2xTemp(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-        elif activation_type == "selu":
+        elif activation_type == "selu": # New Activation Function
             activation = torch.nn.SELU()
+        elif activation_type == "mish": # New Activation Function
+            activation = torch.nn.Mish()
+        elif activation_type == "swish": # New Activation Function
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
+        
+        
         self.default_sf = 128  # sampling rate of the original publication (Hz)
+
         # T = input_shape[1]
         C = input_shape[2]
 

@@ -1,8 +1,12 @@
 """
 SSPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
-This version, named EEGNetMSNoTDrop, introduces modifications incorporating Mish and Swish activation functions and removing temporal dropout.
+
+This modified version employs consistent sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, 
+making it ideal for applications requiring precise sequence understanding.
+
 Original Author:
  * Davide Borra, 2021
 
@@ -100,8 +104,12 @@ class SSPE_EEGNet(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-        elif activation_type == "selu":
+        elif activation_type == "selu": # New Activation Function
             activation = torch.nn.SELU()
+        elif activation_type == "mish": # New Activation Function
+            activation = torch.nn.Mish()
+        elif activation_type == "swish": # New Activation Function
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
        

@@ -1,4 +1,6 @@
-"""EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+"""
+EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+
 Shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals.
 It was proposed for P300, error-related negativity, motor execution, motor imagery decoding.
 
@@ -88,6 +90,12 @@ class EEGNet(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
+        elif activation_type == "selu": # New Activation Function
+            activation = torch.nn.SELU()
+        elif activation_type == "mish": # New Activation Function
+            activation = torch.nn.Mish()
+        elif activation_type == "swish": # New Activation Function
+            activation = torch.nn.Hardswish()        
         else:
             raise ValueError("Wrong hidden activation function")
         
