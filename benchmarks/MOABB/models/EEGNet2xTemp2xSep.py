@@ -4,8 +4,8 @@ EEGNet2xTemp2xSep by Nadine El-Mufit, based on the original EEGNet from https://
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
 
-This modified version doubles the temporal convolutional layer for more comprehensive data extraction and adds a Separable 2D convolutional layer 
-to enhance feature dissection.
+This modified version doubles the temporal convolutional layer for more comprehensive data extraction, adds a Separable 2D convolutional layer to 
+enhance feature dissection, and enhances feature dissection by removing one layer of dropout regularization.
 
 Original Author:
  * Davide Borra, 2021
@@ -23,8 +23,9 @@ class EEGNet2xTemp2xSep(torch.nn.Module):
     
     Description
     ---------
-    This model enhances EEGNet by doubling the temporal convolutional layer, allowing for more comprehensive extraction of sequential data points. 
-    Additionally, it introduces another Separable 2D convolutional layer, which further enhances feature dissection.
+    This model enhances EEGNet by doubling the temporal convolutional layer, allowing for more comprehensive extraction of sequential data points, 
+    and reducing dropout regularization to enhance feature dissection further. Additionally, it introduces another Separable 2D convolutional layer,
+    which further enhances feature dissection.
 
     Arguments
     ---------
@@ -188,7 +189,6 @@ class EEGNet2xTemp2xSep(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
-        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
 
         # Temporal Separable Convolution (First)
         cnn_septemporal_kernels = (
