@@ -4,8 +4,8 @@ SSPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.or
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
 
-This modified version employs consistent sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, 
-making it ideal for applications requiring precise sequence understanding.
+This modified version employs consistent sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, making it ideal
+for applications requiring precise sequence understanding. It also improves feature dissection by removing a layer of dropout regularization.
 
 Original Author:
  * Davide Borra, 2021
@@ -25,13 +25,12 @@ class SSPE_EEGNet(torch.nn.Module):
     
     Description
     ---------
-    (Standard Sinusoidal Positional Encoding EEGNet) is an enhancement of the original EEGNet 
-    designed specifically for improved handling of EEG data by employing consistent sinusoidal positional embeddings. 
-    This version applies a fixed pattern of sine for even and cosine for odd indices across all positions in the sequence, 
-    which helps the network maintain an accurate perception of the temporal order throughout the EEG signal processing.
-
-    This model is particularly suited for EEG applications such as P300, error-related negativity, motor execution, and 
-    motor imagery decoding, where understanding the exact sequence of EEG data points is crucial.
+   (Standard Sinusoidal Positional Encoding EEGNet) is an enhancement of the original EEGNet, designed specifically for improved handling of EEG
+   data by employing consistent sinusoidal positional embeddings. This version applies a fixed pattern of sine for even and cosine for odd indices
+   across all positions in the sequence, which helps the network maintain an accurate perception of the temporal order throughout the EEG signal
+   processing. Additionally, this model improves feature dissection by removing a layer of dropout regularization. It is particularly suited for EEG
+   applications such as P300, error-related negativity, motor execution, and motor imagery decoding, where understanding the exact sequence of EEG
+   data points is crucial.
 
     Arguments
     ---------
@@ -174,7 +173,6 @@ class SSPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
-        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
 
         # Temporal separable convolution
         cnn_septemporal_kernels = (

@@ -4,8 +4,8 @@ SAPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.or
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
 
-This modified version employs sequence-adaptive sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing,
-ideal for tasks requiring precise time-series understanding.
+This modified version employs sequence-adaptive sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, ideal for 
+tasks requiring precise time-series understanding. Additionally, it improves feature dissection by removing a layer of dropout regularization.
 
 Original Author:
  * Davide Borra, 2021
@@ -20,60 +20,57 @@ import numpy as np
 
 
 class SAPE_EEGNet(torch.nn.Module):
-    """
-        SAPE_EEGNet.
+    """SAPE_EEGNet.
         
-        Description
-        ---------
-        (Sequence-Adaptive Positional Encoding EEGNet) is an enhanced version of the traditional EEGNet, 
-        specifically tailored to improve the processing of EEG signals through advanced positional encoding techniques. 
-        This model utilizes sinusoidal positional embeddings, which are crucial for capturing the temporal dynamics 
-        inherent in EEG data. The embeddings differentiate positions within the sequence by applying sine functions 
-        to even indices and cosine functions to odd indices, allowing the model to maintain an awareness of the 
-        temporal order of inputs.
+    Description
+    ---------
+    (Sequence-Adaptive Positional Encoding EEGNet) is an enhanced version of the traditional EEGNet, specifically tailored to improve the
+    processing of EEG signals through advanced positional encoding techniques. This model utilizes sinusoidal positional embeddings,
+    which are crucial for capturing the temporal dynamics inherent in EEG data. The embeddings differentiate positions within the sequence by
+    applying sine functions to even indices and cosine functions to odd indices, allowing the model to maintain an awareness of the temporal
+    order of inputs. Additionally, this architecture has improved feature dissection by removing a layer of dropout regularization. 
+    It is designed to better handle tasks that require understanding of time-series data, such as decoding P300, error-related negativity,
+    motor execution, and motor imagery from single-trial EEG signals.
 
-        This architecture is designed to better handle tasks that require understanding of time-series data, such as 
-        decoding P300, error-related negativity, motor execution, and motor imagery from single-trial EEG signals.
+    Arguments
+    ---------
+    input_shape : tuple
+        Specifies the shape of the input tensor expected by the model, formatted as 
+        (Batch size, Time steps, Channels, 1).
+    cnn_temporal_kernels : int
+        The number of convolutional kernels used in the temporal convolution layer.
+    cnn_temporal_kernelsize : tuple
+        The size of the kernels for the temporal convolution.
+    cnn_spatial_depth_multiplier : int
+        The multiplier for the number of output channels from the spatial depthwise convolution layer.
+    cnn_spatial_max_norm : float
+        The maximum norm for the kernels in the spatial depthwise convolution, used for regularization.
+    cnn_spatial_pool : tuple
+        The dimensions for pooling (pool size and stride) following the spatial convolution.
+    cnn_septemporal_depth_multiplier : int
+        Multiplier for the output channels in the separable temporal convolution layers.
+    cnn_septemporal_kernelsize : tuple
+        The kernel size for the separable temporal convolution.
+    cnn_septemporal_pool : tuple
+        Pooling dimensions (pool size and stride) following the separable temporal convolution.
+    cnn_pool_type : str
+        Type of pooling layer ('avg' or 'max') used in the convolutional modules.
+    dropout : float
+        Dropout rate for regularization to prevent overfitting.
+    dense_max_norm : float
+        Maximum norm for the fully-connected layer weights.
+    dense_n_neurons : int
+        Number of neurons in the fully-connected output layer.
+    activation_type : str
+        Type of activation function used in hidden layers ('relu', 'elu', etc.).
 
-        Arguments
-        ---------
-        input_shape : tuple
-            Specifies the shape of the input tensor expected by the model, formatted as 
-            (Batch size, Time steps, Channels, 1).
-        cnn_temporal_kernels : int
-            The number of convolutional kernels used in the temporal convolution layer.
-        cnn_temporal_kernelsize : tuple
-            The size of the kernels for the temporal convolution.
-        cnn_spatial_depth_multiplier : int
-            The multiplier for the number of output channels from the spatial depthwise convolution layer.
-        cnn_spatial_max_norm : float
-            The maximum norm for the kernels in the spatial depthwise convolution, used for regularization.
-        cnn_spatial_pool : tuple
-            The dimensions for pooling (pool size and stride) following the spatial convolution.
-        cnn_septemporal_depth_multiplier : int
-            Multiplier for the output channels in the separable temporal convolution layers.
-        cnn_septemporal_kernelsize : tuple
-            The kernel size for the separable temporal convolution.
-        cnn_septemporal_pool : tuple
-            Pooling dimensions (pool size and stride) following the separable temporal convolution.
-        cnn_pool_type : str
-            Type of pooling layer ('avg' or 'max') used in the convolutional modules.
-        dropout : float
-            Dropout rate for regularization to prevent overfitting.
-        dense_max_norm : float
-            Maximum norm for the fully-connected layer weights.
-        dense_n_neurons : int
-            Number of neurons in the fully-connected output layer.
-        activation_type : str
-            Type of activation function used in hidden layers ('relu', 'elu', etc.).
-
-        Example:
-        -------
-        >>> inp_tensor = torch.rand([1, 200, 32, 1])
-        >>> model = SAPE_EEGNet(input_shape=inp_tensor.shape)
-        >>> output = model(inp_tensor)
-        >>> output.shape
-        torch.Size([1, 4])
+    Example:
+    -------
+    >>> inp_tensor = torch.rand([1, 200, 32, 1])
+    >>> model = SAPE_EEGNet(input_shape=inp_tensor.shape)
+    >>> output = model(inp_tensor)
+    >>> output.shape
+    torch.Size([1, 4])
         """
 
     def __init__(
@@ -177,7 +174,6 @@ class SAPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
-        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
 
         # Temporal separable convolution
         cnn_septemporal_kernels = (
