@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-This script implements raining neural networks to decode single EEG trials using various paradigms on MOABB datasets.
+This script implements training neural networks to decode single EEG trials using various paradigms on MOABB datasets.
 For a list of supported datasets and paradigms, please refer to the official documentation at http://moabb.neurotechx.com/docs/api.html.
 
 To run training (e.g., architecture: EEGNet; dataset: BNCI2014001) for a specific subject, recording session and training strategy:
