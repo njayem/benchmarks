@@ -175,6 +175,8 @@ class SAPE_EEGNet(torch.nn.Module):
             ),
         )
 
+        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
+
         # Temporal separable convolution
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
@@ -225,6 +227,7 @@ class SAPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
+
         self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
 
         # Shape of intermediate feature maps
