@@ -174,6 +174,8 @@ class SSPE_EEGNet(torch.nn.Module):
             ),
         )
 
+        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
+
         # Temporal separable convolution
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
