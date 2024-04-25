@@ -1,5 +1,5 @@
 """
-SAPE_EEGNet by Nadine El-Mufit, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
+SAPE_EEGNet by Nadine El-Mufti, based on the original EEGNet from https://doi.org/10.1088/1741-2552/aace8c.
 
 The original EEGNet is a shallow and lightweight convolutional neural network proposed for a general decoding of single-trial EEG signals,
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
@@ -11,7 +11,7 @@ Original Author:
  * Davide Borra, 2021
 
 Modifications by:
- * Nadine El-Mufit, 2024
+ * Nadine El-Mufti, 2024
 """
 
 import torch
