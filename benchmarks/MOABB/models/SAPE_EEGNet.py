@@ -5,7 +5,7 @@ The original EEGNet is a shallow and lightweight convolutional neural network pr
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
 
 This modified version employs sequence-adaptive sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, ideal for 
-tasks requiring precise time-series understanding. Additionally, it improves feature dissection by removing a layer of dropout regularization.
+tasks requiring precise time-series understanding.
 
 Original Author:
  * Davide Borra, 2021
@@ -28,8 +28,7 @@ class SAPE_EEGNet(torch.nn.Module):
     processing of EEG signals through advanced positional encoding techniques. This model utilizes sinusoidal positional embeddings,
     which are crucial for capturing the temporal dynamics inherent in EEG data. The embeddings differentiate positions within the sequence by
     applying sine functions to even indices and cosine functions to odd indices, allowing the model to maintain an awareness of the temporal
-    order of inputs. Additionally, this architecture has improved feature dissection by removing a layer of dropout regularization. 
-    It is designed to better handle tasks that require understanding of time-series data, such as decoding P300, error-related negativity,
+    order of inputs. It is designed to better handle tasks that require understanding of time-series data, such as decoding P300, error-related negativity,
     motor execution, and motor imagery from single-trial EEG signals.
 
     Arguments
@@ -175,6 +174,8 @@ class SAPE_EEGNet(torch.nn.Module):
             ),
         )
 
+        self.conv_module.add_module("dropout_1", torch.nn.Dropout(p=dropout))
+
         # Temporal separable convolution
         cnn_septemporal_kernels = (
             cnn_spatial_kernels * cnn_septemporal_depth_multiplier
@@ -225,6 +226,7 @@ class SAPE_EEGNet(torch.nn.Module):
                 pool_axis=[1, 2],
             ),
         )
+
         self.conv_module.add_module("dropout_3", torch.nn.Dropout(p=dropout))
 
         # Shape of intermediate feature maps
