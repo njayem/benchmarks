@@ -5,7 +5,7 @@ The original EEGNet is a shallow and lightweight convolutional neural network pr
 suitable for applications such as P300, error-related negativity, motor execution, and motor imagery decoding.
 
 This modified version employs consistent sinusoidal positional embeddings to enhance temporal accuracy in EEG signal processing, making it ideal
-for applications requiring precise sequence understanding. It also improves feature dissection by removing a layer of dropout regularization.
+for applications requiring precise sequence understanding.
 
 Original Author:
  * Davide Borra, 2021
