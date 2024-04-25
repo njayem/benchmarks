@@ -28,8 +28,7 @@ class SSPE_EEGNet(torch.nn.Module):
    (Standard Sinusoidal Positional Encoding EEGNet) is an enhancement of the original EEGNet, designed specifically for improved handling of EEG
    data by employing consistent sinusoidal positional embeddings. This version applies a fixed pattern of sine for even and cosine for odd indices
    across all positions in the sequence, which helps the network maintain an accurate perception of the temporal order throughout the EEG signal
-   processing. Additionally, this model improves feature dissection by removing a layer of dropout regularization. It is particularly suited for EEG
-   applications such as P300, error-related negativity, motor execution, and motor imagery decoding, where understanding the exact sequence of EEG
+   processing. It is particularly suited for EEG applications such as P300, error-related negativity, motor execution, and motor imagery decoding, where understanding the exact sequence of EEG
    data points is crucial.
 
     Arguments

@@ -28,8 +28,7 @@ class SAPE_EEGNet(torch.nn.Module):
     processing of EEG signals through advanced positional encoding techniques. This model utilizes sinusoidal positional embeddings,
     which are crucial for capturing the temporal dynamics inherent in EEG data. The embeddings differentiate positions within the sequence by
     applying sine functions to even indices and cosine functions to odd indices, allowing the model to maintain an awareness of the temporal
-    order of inputs. Additionally, this architecture has improved feature dissection by removing a layer of dropout regularization. 
-    It is designed to better handle tasks that require understanding of time-series data, such as decoding P300, error-related negativity,
+    order of inputs. It is designed to better handle tasks that require understanding of time-series data, such as decoding P300, error-related negativity,
     motor execution, and motor imagery from single-trial EEG signals.
 
     Arguments
