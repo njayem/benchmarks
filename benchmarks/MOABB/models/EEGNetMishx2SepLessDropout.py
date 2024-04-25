@@ -267,53 +267,6 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
         )
         self.conv_module.add_module("act_5", activation)
 
-        # Temporal Separable Convolution (Third)
-        self.conv_module.add_module(
-            "conv_6",
-            sb.nnet.CNN.Conv2d(
-                in_channels=cnn_septemporal_point_kernels,
-                out_channels=cnn_septemporal_point_kernels,
-                kernel_size=cnn_septemporal_kernelsize,
-                groups=cnn_septemporal_point_kernels,
-                padding="same",
-                padding_mode="constant",
-                bias=False,
-                swap=True,
-            ),
-        )
-        self.conv_module.add_module(
-            "bnorm_6",
-            sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_septemporal_point_kernels,
-                momentum=0.01,
-                affine=True,
-            ),
-        )
-        self.conv_module.add_module("act_6", activation)
-
-        # Add conv_5 (pointwise convolution similar to conv_3)
-        self.conv_module.add_module(
-            "conv_7",
-            sb.nnet.CNN.Conv2d(
-                in_channels=cnn_septemporal_point_kernels,  # Use the output channels from conv_4
-                # Use the same number of output channels as conv_3
-                out_channels=cnn_septemporal_point_kernels,
-                kernel_size=(1, 1),
-                padding="valid",
-                bias=False,
-                swap=True,
-            ),
-        )
-        self.conv_module.add_module(
-            "bnorm_7",
-            sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_septemporal_point_kernels,
-                momentum=0.01,
-                affine=True,
-            ),
-        )
-        self.conv_module.add_module("act_7", activation)
-
         # Shape of intermediate feature maps
         out = self.conv_module(
             torch.ones((1,) + tuple(input_shape[1:-1]) + (1,))
