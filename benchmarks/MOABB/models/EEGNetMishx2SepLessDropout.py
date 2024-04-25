@@ -19,7 +19,7 @@ import speechbrain as sb
 
 class EEGNetMishx2SepLessDropout(torch.nn.Module):
     """EEGNetMishx2SepLessDropout.
-    
+
     Description
     ---------
     This model enhances EEGNet by streamlining its architecture: it removes one dropout layer and incorporates an additional Convolutional 2D layer to facilitate deeper
@@ -97,17 +97,17 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             activation = torch.nn.LeakyReLU()
         elif activation_type == "prelu":
             activation = torch.nn.PReLU()
-        elif activation_type == "selu": # New Activation Function
+        elif activation_type == "selu":  # New Activation Function
             activation = torch.nn.SELU()
-        elif activation_type == "mish": # New Activation Function
+        elif activation_type == "mish":  # New Activation Function
             activation = torch.nn.Mish()
-        elif activation_type == "swish": # New Activation Function
-            activation = torch.nn.Hardswish()        
+        elif activation_type == "swish":  # New Activation Function
+            activation = torch.nn.Hardswish()
         else:
             raise ValueError("Wrong hidden activation function")
-        
+
         self.default_sf = 128  # sampling rate of the original publication (Hz)
-        
+
         # T = input_shape[1]
         C = input_shape[2]
 
@@ -133,7 +133,7 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
                 input_size=cnn_temporal_kernels, momentum=0.01, affine=True,
             ),
         )
-        
+
         # Spatial Depthwise Convolution
         cnn_spatial_kernels = (
             cnn_spatial_depth_multiplier * cnn_temporal_kernels
@@ -225,7 +225,7 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             "conv_4",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_point_kernels,
-                out_channels=cnn_septemporal_point_kernels,  
+                out_channels=cnn_septemporal_point_kernels,
                 kernel_size=cnn_septemporal_kernelsize,
                 groups=cnn_septemporal_point_kernels,
                 padding="same",
@@ -237,7 +237,7 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
         self.conv_module.add_module(
             "bnorm_4",
             sb.nnet.normalization.BatchNorm2d(
-                input_size=cnn_septemporal_point_kernels, 
+                input_size=cnn_septemporal_point_kernels,
                 momentum=0.01,
                 affine=True,
             ),
@@ -249,7 +249,8 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             "conv_5",
             sb.nnet.CNN.Conv2d(
                 in_channels=cnn_septemporal_point_kernels,  # Use the output channels from conv_4
-                out_channels=cnn_septemporal_point_kernels,  # Use the same number of output channels as conv_3
+                # Use the same number of output channels as conv_3
+                out_channels=cnn_septemporal_point_kernels,
                 kernel_size=(1, 1),
                 padding="valid",
                 bias=False,
@@ -265,6 +266,53 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             ),
         )
         self.conv_module.add_module("act_5", activation)
+
+        # Temporal Separable Convolution (Third)
+        self.conv_module.add_module(
+            "conv_6",
+            sb.nnet.CNN.Conv2d(
+                in_channels=cnn_septemporal_point_kernels,
+                out_channels=cnn_septemporal_point_kernels,
+                kernel_size=cnn_septemporal_kernelsize,
+                groups=cnn_septemporal_point_kernels,
+                padding="same",
+                padding_mode="constant",
+                bias=False,
+                swap=True,
+            ),
+        )
+        self.conv_module.add_module(
+            "bnorm_6",
+            sb.nnet.normalization.BatchNorm2d(
+                input_size=cnn_septemporal_point_kernels,
+                momentum=0.01,
+                affine=True,
+            ),
+        )
+        self.conv_module.add_module("act_6", activation)
+
+        # Add conv_5 (pointwise convolution similar to conv_3)
+        self.conv_module.add_module(
+            "conv_7",
+            sb.nnet.CNN.Conv2d(
+                in_channels=cnn_septemporal_point_kernels,  # Use the output channels from conv_4
+                # Use the same number of output channels as conv_3
+                out_channels=cnn_septemporal_point_kernels,
+                kernel_size=(1, 1),
+                padding="valid",
+                bias=False,
+                swap=True,
+            ),
+        )
+        self.conv_module.add_module(
+            "bnorm_7",
+            sb.nnet.normalization.BatchNorm2d(
+                input_size=cnn_septemporal_point_kernels,
+                momentum=0.01,
+                affine=True,
+            ),
+        )
+        self.conv_module.add_module("act_7", activation)
 
         # Shape of intermediate feature maps
         out = self.conv_module(
@@ -285,7 +333,6 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
             ),
         )
         self.dense_module.add_module("act_out", torch.nn.LogSoftmax(dim=1))
-
 
     def _num_flat_features(self, x):
         """Returns the number of flattened features from a tensor.
