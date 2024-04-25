@@ -22,9 +22,9 @@ class EEGNetMishx2SepLessDropout(torch.nn.Module):
     
     Description
     ---------
-    This model refines EEGNet by removing one dropout layer and adding an extra Convolutional 2D layer for deeper feature extraction. Notably, 
-    it introduces another Separable 2D convolutional layer, enhancing feature dissection without dropout regularization. 
-    The network maintains standard average pooling and employs Mish activation functions for improved discrimination and generalization.
+    This model enhances EEGNet by streamlining its architecture: it removes one dropout layer and incorporates an additional Convolutional 2D layer to facilitate deeper
+    feature extraction. Notably, it introduces a supplementary Separable 2D convolutional layer to enhance feature dissection without dropout regularization. 
+    Mish activation functions are employed for improved discrimination and generalization, although other activation functions have been tested as alternatives.
 
     Arguments
     ---------
